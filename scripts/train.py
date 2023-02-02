@@ -82,7 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--checkpoint_freq', type=int, default=None, help='Checkpoint frequency')
     parser.add_argument('--target', type=str, default='regret', choices=['regret', 'in_solution'])
-    parser.add_argument('--use_gpu', action='store_true')
+    parser.add_argument('--gpu', type=int, default=None, help='GPU device')
     args = parser.parse_args()
 
     # Load dataset
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     val_set = datasets.TSPDataset(args.data_dir / 'val.txt')
 
     # use GPU if it is available
-    device = torch.device('cuda' if args.use_gpu and torch.cuda.is_available() else 'cpu')
+    device = torch.device(f'cuda:{args.gpu}' if args.gpu and torch.cuda.is_available() else 'cpu')
     print('device =', device)
 
     _, feat_dim = train_set[0].ndata['features'].shape
@@ -128,7 +128,16 @@ if __name__ == '__main__':
     # early stopping
     best_score = None
     counter = 0
-
+    #####################
+    # save a random model
+    # writer = SummaryWriter(args.tb_dir / "rand")
+    # save(model, optimizer, 0, 0, 0, args.tb_dir / "rand" / "checkpoint.pt")
+    # params = dict(vars(args))
+    # params['data_dir'] = str(params['data_dir'])
+    # params['tb_dir'] = str(params['tb_dir'])
+    # json.dump(params, open(args.tb_dir / "rand" / 'params.json', 'w'))
+    # exit()
+    #####################
     pbar = tqdm.trange(args.n_epochs)
     for epoch in pbar:
         epoch_loss = train(model, train_loader, args.target, criterion, optimizer, device)

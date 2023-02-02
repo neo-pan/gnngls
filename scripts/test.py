@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('guides', type=str, nargs='+')
     parser.add_argument('--time_limit', type=float, default=10.)
     parser.add_argument('--perturbation_moves', type=int, default=20)
-    parser.add_argument('--use_gpu', action='store_true')
+    parser.add_argument('--gpu', type=int, default=None, help='GPU device')
     args = parser.parse_args()
 
     params = json.load(open(args.model_path.parent / 'params.json'))
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         test_set = datasets.TSPDataset(args.data_path)
 
     if 'regret_pred' in args.guides:
-        device = torch.device('cuda' if args.use_gpu and torch.cuda.is_available() else 'cpu')
+        device = torch.device(f'cuda:{args.gpu}' if args.gpu and torch.cuda.is_available() else 'cpu')
         print('device =', device)
 
         _, feat_dim = test_set[0].ndata['features'].shape

@@ -167,4 +167,5 @@ scripts/data
 scripts/models
 scripts/runs
 
-*.npz
+data/
+models/

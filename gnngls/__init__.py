@@ -1,10 +1,13 @@
 import concorde.tsp as concorde
+import os
 import lkh
+import tempfile
 import networkx as nx
 import numpy as np
 import tsplib95
 from matplotlib import colors
 
+from utils import stdout_redirected
 
 def tour_to_edge_attribute(G, tour):
     in_tour = {}
@@ -45,10 +48,46 @@ def is_valid_tour(G, tour):
 
 
 def optimal_tour(G, scale=1e3):
-    coords = scale * np.vstack([G.nodes[n]['pos'] for n in sorted(G.nodes)])
-    solver = concorde.TSPSolver.from_data(coords[:, 0], coords[:, 1], norm='EUC_2D')
-    solution = solver.solve()
+    problem = tsplib95.models.StandardProblem()
+    problem.name = 'TSP'
+    problem.type = 'TSP'
+    problem.dimension = G.number_of_nodes()
+    problem.edge_weight_type = 'EXPLICIT'
+    problem.edge_weight_format = 'FULL_MATRIX'
+    edge_weights, _ = nx.attr_matrix(G, edge_attr='weight')
+    problem.edge_weights = (edge_weights * scale).astype(np.int64).tolist()
+    owd = os.getcwd()
+    # try:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.chdir(tmpdir)
+        with open("tmp.tsp", "w") as fp:
+            problem.write(fp)
+        solver = concorde.TSPSolver.from_tspfile(os.path.join(tmpdir, "tmp.tsp"))
+        with stdout_redirected():
+            solution = solver.solve(verbose=False)
+        assert solution.success
+        os.chdir(owd)
+    # except Exception as e:
+    #     print('Concorde failed')
+    #     print(e)
+    #     raise
+    # finally:
+    
     tour = solution.tour.tolist() + [0]
+    return tour
+
+def sub_optimal_tour(G, scale=1e3, lkh_path='/home/xhpan/Tools/LKH3/LKH-3.0.8/LKH', **kwargs):
+    problem = tsplib95.models.StandardProblem()
+    problem.name = 'TSP'
+    problem.type = 'TSP'
+    problem.dimension = len(G.nodes)
+    problem.edge_weight_type = 'EXPLICIT'
+    problem.edge_weight_format = 'FULL_MATRIX'
+    edge_weights, _ = nx.attr_matrix(G, edge_attr='weight')
+    problem.edge_weights = (edge_weights * scale).tolist()
+
+    solution = lkh.solve(lkh_path, problem=problem, **kwargs)
+    tour = [n - 1 for n in solution[0]] + [0]
     return tour
 
 
@@ -60,13 +99,15 @@ def optimal_cost(G, weight='weight'):
     return c
 
 
-def fixed_edge_tour(G, e, scale=1e3, lkh_path='LKH', **kwargs):
+def fixed_edge_tour(G, e, scale=1e3, lkh_path='/home/xhpan/Tools/LKH3/LKH-3.0.8/LKH', **kwargs):
     problem = tsplib95.models.StandardProblem()
     problem.name = 'TSP'
     problem.type = 'TSP'
     problem.dimension = len(G.nodes)
-    problem.edge_weight_type = 'EUC_2D'
-    problem.node_coords = {n + 1: scale * G.nodes[n]['pos'] for n in G.nodes}
+    problem.edge_weight_type = 'EXPLICIT'
+    problem.edge_weight_format = 'FULL_MATRIX'
+    edge_weights, _ = nx.attr_matrix(G, edge_attr='weight')
+    problem.edge_weights = (edge_weights * scale).tolist()
     problem.fixed_edges = [[n + 1 for n in e]]
 
     solution = lkh.solve(lkh_path, problem=problem, **kwargs)
