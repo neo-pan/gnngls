@@ -23,15 +23,14 @@ def prepare_instance(G):
 
 def get_solved_instances(n_nodes, n_instances):
     for _ in range(n_instances):
-        G = nx.Graph()
+        G = nx.DiGraph()
 
         coords = np.random.random((n_nodes, 2))
         for n, p in enumerate(coords):
             G.add_node(n, pos=0.0)
 
         distance = np.random.random((n_nodes, n_nodes))
-        for i, j in itertools.combinations(G.nodes, 2):
-            # w = np.linalg.norm(G.nodes[j]['pos'] - G.nodes[i]['pos'])
+        for i, j in itertools.permutations(G.nodes, 2):
             G.add_edge(i, j, weight=distance[i, j])
 
         # opt_solution = gnngls.sub_optimal_tour(G, scale=1e6, max_trials=100, runs=10)

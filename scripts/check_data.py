@@ -98,7 +98,10 @@ if __name__ == '__main__':
     print(knn_regressive.shape)
 
     np.savez('knn_statistics', knn=knn, knn_regressive=knn_regressive)
-
+    # npz = np.load("knn_statistics.npz")
+    # knn = npz["knn"]
+    # knn_regressive = npz["knn_regressive"]
+    
     print('-'*60)
     print(f"Overall statistic:")
     print(f"{'K mean:':<18} {knn.flatten().mean()}, std: {knn.flatten().std()}")
@@ -109,3 +112,4 @@ if __name__ == '__main__':
     print(f"Per-graph statistic:")
     print(f"{'K mean:':<18} {per_graph_knn.flatten().mean()}, std: {per_graph_knn.flatten().std()}")
     print(f"{'Regressive K mean:':<18} {per_graph_knn_regressive.flatten().mean()}, std: {per_graph_knn_regressive.flatten().std()}")
+    print(f"K max: {per_graph_knn.max()}, Regressive K max: {per_graph_knn_regressive.max()}")

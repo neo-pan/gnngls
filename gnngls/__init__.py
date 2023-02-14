@@ -7,13 +7,13 @@ import numpy as np
 import tsplib95
 from matplotlib import colors
 
-from utils import stdout_redirected
+from .utils import OutputGrabber
 
 def tour_to_edge_attribute(G, tour):
     in_tour = {}
     tour_edges = list(zip(tour[:-1], tour[1:]))
     for e in G.edges:
-        in_tour[e] = e in tour_edges or tuple(reversed(e)) in tour_edges
+        in_tour[e] = e in tour_edges
     return in_tour
 
 
@@ -51,30 +51,43 @@ def optimal_tour(G, scale=1e3):
     problem = tsplib95.models.StandardProblem()
     problem.name = 'TSP'
     problem.type = 'TSP'
-    problem.dimension = G.number_of_nodes()
+    problem.dimension = 2 * G.number_of_nodes()
     problem.edge_weight_type = 'EXPLICIT'
     problem.edge_weight_format = 'FULL_MATRIX'
+
+    # transform ATSP to TSP
     edge_weights, _ = nx.attr_matrix(G, edge_attr='weight')
-    problem.edge_weights = (edge_weights * scale).astype(np.int64).tolist()
-    owd = os.getcwd()
-    # try:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        os.chdir(tmpdir)
-        with open("tmp.tsp", "w") as fp:
+    edge_weights = np.array(edge_weights)
+    np.fill_diagonal(edge_weights, -np.inf)
+    infeasible = np.ones_like(edge_weights) * np.inf
+    tsp_edge_weights = np.vstack((
+        np.hstack((infeasible, edge_weights.T)),
+        np.hstack((edge_weights, infeasible))
+    ))
+
+    problem.edge_weights = (tsp_edge_weights * scale).astype(np.int64).tolist()
+
+    with tempfile.TemporaryDirectory(dir="/mnt/data4/xhpan/tmp") as tmpdir:
+        with open(os.path.join(tmpdir, "tmp.tsp"), "w") as fp:
             problem.write(fp)
         solver = concorde.TSPSolver.from_tspfile(os.path.join(tmpdir, "tmp.tsp"))
-        with stdout_redirected():
+        with OutputGrabber() as out:
             solution = solver.solve(verbose=False)
         assert solution.success
-        os.chdir(owd)
-    # except Exception as e:
-    #     print('Concorde failed')
-    #     print(e)
-    #     raise
-    # finally:
+        tour = [i for i in solution.tour.tolist() if i < G.number_of_nodes()] + [0]
     
-    tour = solution.tour.tolist() + [0]
-    return tour
+    # filter the transformed tour
+    rev_tour = list(reversed(tour))
+
+    # select the tour with smaller cost
+    tour_len = tour_cost(G, tour)
+    rev_tour_len = tour_cost(G, rev_tour)
+    if tour_len < rev_tour_len:
+        result = tour
+    else:
+        result = rev_tour
+
+    return result
 
 def sub_optimal_tour(G, scale=1e3, lkh_path='/home/xhpan/Tools/LKH3/LKH-3.0.8/LKH', **kwargs):
     problem = tsplib95.models.StandardProblem()
