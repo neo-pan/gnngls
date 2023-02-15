@@ -12,7 +12,6 @@ import numpy as np
 
 import gnngls
 from gnngls import datasets
-from utils import stdout_redirected
 
 
 def prepare_instance(G):
