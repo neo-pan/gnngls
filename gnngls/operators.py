@@ -15,6 +15,7 @@ def two_opt_cost(tour, D, i, j):
     if i == j:
         return 0
     elif j < i:
+        raise NotImplementedError
         i, j = j, i
 
     a = tour[i]
@@ -22,10 +23,15 @@ def two_opt_cost(tour, D, i, j):
     c = tour[j]
     d = tour[j - 1]
 
+    old_frag = sum(D[tour[idx], tour[idx+1]] for idx in range(i, j-1))
+    new_frag = sum(D[tour[idx+1], tour[idx]] for idx in range(j-2, i-1, -1))
+
     delta = D[a, c] \
             + D[b, d] \
-            - D[a, b] \
-            - D[c, d]
+            - D[b, a] \
+            - D[d, c] \
+            + new_frag \
+            - old_frag
     return delta
 
 

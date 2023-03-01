@@ -1,40 +1,27 @@
-import argparse
-import itertools
-import multiprocessing as mp
-import pathlib
-import uuid
-
-import networkx as nx
 import numpy as np
-import torch
-
+import networkx as nx
 import gnngls
-from gnngls import datasets
-from gnngls import optimal_tour, sub_optimal_tour, tour_cost
+import itertools
 
-from check_data import check_triangle_inequality
-from generate_instances import get_solved_instances
-
-# checkpoint = torch.load('/home/xhpan/Codes/gnngls/scripts/models/tsp50_c/checkpoint_final.pt')
-# print(checkpoint['epoch'])
+np.set_printoptions(linewidth=200)
 
 G = nx.DiGraph()
-n_nodes = 5
+n_nodes = 4
+
 coords = np.random.random((n_nodes, 2))
 for n, p in enumerate(coords):
     G.add_node(n, pos=0.0)
 
-w = 1
+distance = np.random.random((n_nodes, n_nodes))
 for i, j in itertools.permutations(G.nodes, 2):
-    print(i,j, end=' ')
-    if i==j:
-        continue
-    G.add_edge(i, j, weight=w)
-    w += 1
+    G.add_edge(i, j, weight=distance[i, j])
 
-list(get_solved_instances(20, 100))
+# opt_solution = gnngls.sub_optimal_tour(G, scale=1e6, max_trials=100, runs=10)
+opt_solution = gnngls.optimal_tour(G, scale=1e6)
+sub_opt_sol = gnngls.sub_optimal_tour(G, scale=1e6)
 
-# print("distance", nx.attr_matrix(G, edge_attr='weight'))
-# print(check_triangle_inequality(G))
-# print(f"Sub-optimal tour cost: {tour_cost(G, sub_optimal_tour(G))}")
-# print(f"Optimal tour cost: {tour_cost(G, optimal_tour(G))}")
+opt_len = gnngls.tour_cost(G, opt_solution)
+sub_opt_len = gnngls.tour_cost(G, sub_opt_sol)
+
+print(f'Optimal length: {opt_len}')
+print(f'Sub-optimal length: {sub_opt_len}')

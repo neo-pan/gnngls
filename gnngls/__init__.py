@@ -58,14 +58,15 @@ def optimal_tour(G, scale=1e3):
     # transform ATSP to TSP
     edge_weights, _ = nx.attr_matrix(G, edge_attr='weight')
     edge_weights = np.array(edge_weights)
-    np.fill_diagonal(edge_weights, -np.inf)
-    infeasible = np.ones_like(edge_weights) * np.inf
+    MAX_VALUE = 10 * edge_weights.max()
+    np.fill_diagonal(edge_weights, -MAX_VALUE)
+    infeasible = np.ones_like(edge_weights) * MAX_VALUE
     tsp_edge_weights = np.vstack((
         np.hstack((infeasible, edge_weights.T)),
         np.hstack((edge_weights, infeasible))
     ))
 
-    problem.edge_weights = (tsp_edge_weights * scale).astype(np.int64).tolist()
+    problem.edge_weights = (tsp_edge_weights * scale).astype(np.int32).tolist()
 
     with tempfile.TemporaryDirectory(dir="/mnt/data4/xhpan/tmp") as tmpdir:
         with open(os.path.join(tmpdir, "tmp.tsp"), "w") as fp:
@@ -74,14 +75,16 @@ def optimal_tour(G, scale=1e3):
         with OutputGrabber() as out:
             solution = solver.solve(verbose=False)
         assert solution.success
+        # filter the transformed tour
         tour = [i for i in solution.tour.tolist() if i < G.number_of_nodes()] + [0]
-    
-    # filter the transformed tour
-    rev_tour = list(reversed(tour))
+        print(solution.tour.tolist())
 
     # select the tour with smaller cost
+    rev_tour = list(reversed(tour))
     tour_len = tour_cost(G, tour)
     rev_tour_len = tour_cost(G, rev_tour)
+    print(f'Optimal tour length: {tour_len}, reversed tour length: {rev_tour_len}')
+    print(f'Optimal tour: {tour}, reversed tour: {rev_tour}')
     if tour_len < rev_tour_len:
         result = tour
     else:
