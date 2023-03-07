@@ -47,7 +47,7 @@ def is_valid_tour(G, tour):
     return True
 
 
-def optimal_tour(G, scale=1e3):
+def optimal_tour(G, scale=1e3,verbose=False, **kwargs):
     problem = tsplib95.models.StandardProblem()
     problem.name = 'TSP'
     problem.type = 'TSP'
@@ -58,22 +58,26 @@ def optimal_tour(G, scale=1e3):
     # transform ATSP to TSP
     edge_weights, _ = nx.attr_matrix(G, edge_attr='weight')
     edge_weights = np.array(edge_weights)
-    MAX_VALUE = 10 * edge_weights.max()
-    np.fill_diagonal(edge_weights, -MAX_VALUE)
+    # set maximum and minimum value, idea borrowed from R package TSP
+    EDGE_WEIGHTS_RANGE = edge_weights.max() - edge_weights.min()
+    MAX_VALUE = edge_weights.max() + EDGE_WEIGHTS_RANGE * 2
+    MIN_VALUE = edge_weights.min() - EDGE_WEIGHTS_RANGE * 2
+    assert MAX_VALUE > edge_weights.max() and MIN_VALUE <= edge_weights.min()
+    np.fill_diagonal(edge_weights, MIN_VALUE)
     infeasible = np.ones_like(edge_weights) * MAX_VALUE
     tsp_edge_weights = np.vstack((
         np.hstack((infeasible, edge_weights.T)),
         np.hstack((edge_weights, infeasible))
     ))
-
-    problem.edge_weights = (tsp_edge_weights * scale).astype(np.int32).tolist()
+    problem_edge_weights = (tsp_edge_weights * scale).astype(np.int32)
+    problem_edge_weights = problem_edge_weights - problem_edge_weights.min()
+    problem.edge_weights = problem_edge_weights.tolist()
 
     with tempfile.TemporaryDirectory(dir="/mnt/data4/xhpan/tmp") as tmpdir:
         with open(os.path.join(tmpdir, "tmp.tsp"), "w") as fp:
             problem.write(fp)
         solver = concorde.TSPSolver.from_tspfile(os.path.join(tmpdir, "tmp.tsp"))
-        with OutputGrabber() as out:
-            solution = solver.solve(verbose=False)
+        solution = solver.solve(verbose, **kwargs)
         assert solution.success
         # filter the transformed tour
         tour = [i for i in solution.tour.tolist() if i < G.number_of_nodes()] + [0]

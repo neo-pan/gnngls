@@ -166,6 +166,7 @@ cython_debug/
 scripts/data
 scripts/models
 scripts/runs
+scripts/debug.py
 
 *.npz
 .vscode/
