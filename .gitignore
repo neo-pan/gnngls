@@ -167,6 +167,7 @@ scripts/data
 scripts/models
 scripts/runs
 scripts/debug.py
+scripts/tmp
 
 *.npz
 .vscode/

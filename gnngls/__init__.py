@@ -47,7 +47,7 @@ def is_valid_tour(G, tour):
     return True
 
 
-def optimal_tour(G, scale=1e3,verbose=False, **kwargs):
+def optimal_tour(G, scale=1e3, verbose=False, **kwargs):
     problem = tsplib95.models.StandardProblem()
     problem.name = 'TSP'
     problem.type = 'TSP'
@@ -81,14 +81,11 @@ def optimal_tour(G, scale=1e3,verbose=False, **kwargs):
         assert solution.success
         # filter the transformed tour
         tour = [i for i in solution.tour.tolist() if i < G.number_of_nodes()] + [0]
-        print(solution.tour.tolist())
 
     # select the tour with smaller cost
     rev_tour = list(reversed(tour))
     tour_len = tour_cost(G, tour)
     rev_tour_len = tour_cost(G, rev_tour)
-    print(f'Optimal tour length: {tour_len}, reversed tour length: {rev_tour_len}')
-    print(f'Optimal tour: {tour}, reversed tour: {rev_tour}')
     if tour_len < rev_tour_len:
         result = tour
     else:
