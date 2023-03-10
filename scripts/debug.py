@@ -5,6 +5,8 @@ import itertools
 import tsplib95
 import lkh
 
+from gnngls import datasets
+
 np.set_printoptions(linewidth=400)
 
 # G = nx.read_gpickle('problem.pkl')
@@ -38,3 +40,16 @@ if sub_opt_len < opt_len:
 # lkh_path='/home/xhpan/Tools/LKH3/LKH-3.0.8/LKH'
 # solution = lkh.solve(lkh_path, problem=problem)
 # print(solution)
+
+in_solution = gnngls.tour_to_edge_attribute(G, opt_solution)
+nx.set_edge_attributes(G, in_solution, 'in_solution')
+datasets.set_features(G)
+datasets.set_labels(G)
+print(nx.attr_matrix(G, edge_attr='regret')[0])
+
+# for e in [[3,1], [1,3]]:
+#     tour = gnngls.fixed_edge_tour(G, e, scale=1e6, max_trials=100, runs=10)
+#     cost = gnngls.tour_cost(G, tour)
+#     regret = (cost - opt_len) / opt_len
+#     print(f'Cost: {cost}, Regret: {regret}')
+#     print(f"Fixed edge: {e}, Tour: {tour}")

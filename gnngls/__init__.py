@@ -117,9 +117,9 @@ def optimal_cost(G, weight='weight'):
 
 
 def fixed_edge_tour(G, e, scale=1e3, lkh_path='/home/xhpan/Tools/LKH3/LKH-3.0.8/LKH', **kwargs):
-    problem = tsplib95.models.StandardProblem()
-    problem.name = 'TSP'
-    problem.type = 'TSP'
+    problem = lkh.LKHProblem()
+    problem.name = 'ATSP'
+    problem.type = 'ATSP'
     problem.dimension = len(G.nodes)
     problem.edge_weight_type = 'EXPLICIT'
     problem.edge_weight_format = 'FULL_MATRIX'
